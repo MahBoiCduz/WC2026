@@ -9,7 +9,7 @@ const INITIAL_DATA = {
     oddsApiSport: "soccer_uefa_champs_league", // Giải đấu đồng bộ mặc định
     lastSyncTime: null,
     systemWalletBalance: 0, // Số xu trong ví nhà cái thu từ phí sàn & cược thua
-    googleClientId: "888258284687-scl20ld2kio40m22u3bqpikmksu6b3o3.apps.googleusercontent.com" // Mẫu Client ID (người dùng thay đổi được)
+    googleClientId: "578999621106-q6m71v80hf3imftoer6t8c6snsoo5u9f.apps.googleusercontent.com" // Mẫu Client ID (người dùng thay đổi được)
   },
   
   // Trạng thái phiên đăng nhập giả lập
