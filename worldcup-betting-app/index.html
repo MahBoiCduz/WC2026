@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏆 World Cup Betting App - Hệ Thống Cá Cược Nội Bộ</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- 1. Top Simulator Bar (Dành cho việc kiểm thử và chạy tự động) -->
+  <div class="simulator-banner">
+    <div class="sim-title">
+      <span>⚙️ BẢNG GIẢ LẬP VẬN HÀNH (SIMULATOR)</span>
+    </div>
+    <div class="sim-controls">
+      <div class="sim-indicator">
+        <span class="sim-dot" id="simSyncDot"></span>
+        <span>Đồng bộ: <strong id="simSyncTimer">Tự động (5 phút)</strong></span>
+      </div>
+      <button class="sim-btn" id="btnSimSyncNow">🔄 Đồng bộ ngay (Cronjob)</button>
+      <button class="sim-btn" id="btnSimTimeJump">⏱️ Tua nhanh 5 phút</button>
+      <button class="sim-btn" id="btnSimRandomGoal" title="Chỉ áp dụng cho trận đang Live">⚽ Giả lập Bàn thắng</button>
+      <button class="sim-btn danger" id="btnResetData">🧹 Reset Data</button>
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- 2. Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-section">
+        <span class="brand-logo">🏆</span>
+        <h1 class="brand-name">Cúp Vàng Nội Bộ</h1>
+      </div>
+
+      <!-- User Profile Card -->
+      <div class="user-profile-card">
+        <div class="profile-info">
+          <img src="" alt="Avatar" class="profile-avatar" id="userAvatar">
+          <div>
+            <div class="profile-name" id="userName">Đang tải...</div>
+            <div class="profile-role" id="userRole">PLAYER</div>
+          </div>
+        </div>
+        <div class="profile-balance">
+          <span>Số dư khả dụng:</span>
+          <span class="balance-amount"><span id="userBalance">0</span> <span style="font-size: 0.8rem; font-weight:600;">Xu</span></span>
+        </div>
+        <div class="profile-balance" style="border-top: none; padding-top: 4px; font-size: 0.8rem;">
+          <span style="color: var(--color-text-muted);">Số dư đóng băng:</span>
+          <span style="color: #a5b4fc; font-family: monospace; font-weight: 700;"><span id="userFrozenBalance">0</span> Xu</span>
+        </div>
+      </div>
+
+      <!-- Nav Links -->
+      <nav style="flex: 1;">
+        <ul class="nav-menu">
+          <li>
+            <a class="nav-item active" data-target="match-center">
+              <span class="nav-icon">⚽</span>
+              <span>Trận Đấu Cúp</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item" data-target="my-wallet">
+              <span class="nav-icon">💳</span>
+              <span>Ví Của Tôi</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item" data-target="rooms-leaderboard">
+              <span class="nav-icon">👥</span>
+              <span>Phòng & Xếp Hạng</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item" data-target="admin-console" id="navAdminLink">
+              <span class="nav-icon">🛡️</span>
+              <span>Bảng Quản Trị Admin</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Role Switcher -->
+      <div class="role-switcher-container">
+        <label class="switcher-label">Chuyển tài khoản Test</label>
+        <select class="role-select" id="roleSelect">
+          <option value="messi">Lionel Messi (Player)</option>
+          <option value="ronaldo">Cristiano Ronaldo (Player)</option>
+          <option value="neymar">Neymar Jr (Player)</option>
+          <option value="admin">Admin Hệ Thống</option>
+        </select>
+      </div>
+    </aside>
+
+    <!-- 3. Main Content Panel -->
+    <main class="main-content">
+      
+      <!-- Top Action Bar (Bell notifications, etc.) -->
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;" class="top-bar-user-actions">
+        <button class="notification-bell-btn" id="notifBellBtn">
+          🔔
+          <span class="notif-badge" id="notifBadgeCount" style="display: none;">0</span>
+        </button>
+        <!-- Notification Dropdown -->
+        <div class="notification-dropdown" id="notifDropdown">
+          <div class="notif-dropdown-header">
+            <span>Thông báo mới nhận</span>
+            <span style="color: var(--accent-green); cursor: pointer;" id="btnMarkAllRead">Đọc tất cả</span>
+          </div>
+          <ul class="notif-dropdown-list" id="notifDropdownList">
+            <!-- Dynamic notifs -->
+          </ul>
+          <div class="notif-dropdown-footer">
+            <span style="color: var(--color-text-muted);">Real-time Notification Center</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: Match Center -->
+      <section id="match-center" class="view-section active">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>Match Center - Sân Cỏ World Cup</h1>
+            <p>Chọn trận đấu để tham gia cược. Hệ thống tự khóa trước giờ bóng lăn 5 phút.</p>
+          </div>
+        </div>
+
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all">Tất cả</button>
+          <button class="filter-tab" data-filter="upcoming">Sắp diễn ra</button>
+          <button class="filter-tab" data-filter="live">Đang trực tiếp 🔴</button>
+          <button class="filter-tab" data-filter="finished">Đã kết thúc</button>
+        </div>
+
+        <div class="matches-grid" id="matchesGrid">
+          <!-- Dynamic Match Cards -->
+        </div>
+      </section>
+
+      <!-- SECTION: My Wallet -->
+      <section id="my-wallet" class="view-section">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>Ví Nội Bộ & Tokenomics</h1>
+            <p>Xem thông tin tài khoản, số dư đóng băng và lịch sử sao kê cược.</p>
+          </div>
+        </div>
+
+        <div class="wallet-grid">
+          <!-- Balance Summary Card -->
+          <div class="wallet-balance-card">
+            <div>
+              <span class="form-label" style="margin-bottom: 4px;">Tài khoản chính</span>
+              <h2 style="font-size: 2.2rem; color: var(--accent-gold); font-family: monospace; font-weight: 800;">
+                <span id="walletAvailableBalance">0</span> <span style="font-size: 1.2rem;">Xu</span>
+              </h2>
+            </div>
+            
+            <div class="wallet-sub-balance">
+              <div class="sub-balance-item">
+                <span class="sub-balance-title">Đang đóng băng (Cược)</span>
+                <span class="sub-balance-value frozen"><span id="walletFrozenBalance">0</span> Xu</span>
+              </div>
+              <div class="sub-balance-item" style="text-align: right;">
+                <span class="sub-balance-title">Tổng tài sản</span>
+                <span class="sub-balance-value" style="color: var(--color-text-main);"><span id="walletTotalBalance">0</span> Xu</span>
+              </div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: var(--border-radius-md); font-size: 0.75rem; color: var(--color-text-muted); line-height: 1.4;">
+              ⚠️ <strong>Cơ chế khóa số dư (Escrow):</strong> Khi đặt cược thành công, số tiền cược sẽ chuyển vào trạng thái "Đóng băng". Tiền gốc và tiền thắng sẽ được trả về ví sau khi trận đấu kết thúc chính thức.
+            </div>
+          </div>
+
+          <!-- Transaction Logs Card -->
+          <div class="transactions-card">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Sao kê lịch sử giao dịch</h3>
+            <ul class="transactions-list" id="transactionsList">
+              <!-- Dynamic transactions list -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: Rooms & Leaderboards -->
+      <section id="rooms-leaderboard" class="view-section">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>Phòng Chơi & Bảng Xếp Hạng</h1>
+            <p>Tham gia phòng tùy chỉnh cùng đồng nghiệp và cạnh tranh trên bảng xếp hạng.</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn gold" id="btnOpenJoinRoomModal">🔑 Tham gia phòng</button>
+            <button class="btn primary" id="btnOpenCreateRoomModal">➕ Tạo phòng mới</button>
+          </div>
+        </div>
+
+        <div class="rooms-grid">
+          <!-- Rooms List Sidebar -->
+          <div class="rooms-sidebar-card">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Phòng của bạn</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;" id="userRoomsList">
+              <!-- Dynamic Rooms -->
+            </div>
+          </div>
+
+          <!-- Active Room Leaderboard Details -->
+          <div class="leaderboard-panel" id="roomLeaderboardPanel">
+            <div class="leaderboard-header">
+              <div>
+                <h2 style="font-size: 1.3rem; font-weight: 800;" id="activeRoomName">Đang tải phòng...</h2>
+                <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 4px;">
+                  Mã Phòng: <strong style="color: var(--accent-gold); font-family: monospace;" id="activeRoomCode">...</strong>
+                </p>
+              </div>
+              <div class="room-actions" id="roomAdminActions" style="display: none;">
+                <!-- Room Admin Actions will appear here (e.g. pending requests count) -->
+              </div>
+            </div>
+
+            <!-- Pending requests section for Custom Room Admin -->
+            <div class="pending-requests-box" id="pendingRequestsBox" style="display: none;">
+              <h4 style="font-size: 0.8rem; color: var(--accent-gold); text-transform: uppercase; margin-bottom: 8px;">Yêu cầu tham gia đang chờ duyệt</h4>
+              <div id="pendingRequestsList">
+                <!-- Dynamic request rows -->
+              </div>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboardList">
+              <!-- Dynamic Leaderboard rows -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: Admin Console -->
+      <section id="admin-console" class="view-section">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>Hệ Thống Quản Trị Admin</h1>
+            <p>Dành riêng cho Admin nhà cái: Quản lý ví, nạp token, thiết lập tỷ lệ và kết nối API kèo.</p>
+          </div>
+        </div>
+
+        <div class="admin-grid">
+          <!-- Left Column: Configs & Deposits -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <!-- Platform Economics & API Settings -->
+            <div class="admin-card">
+              <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                ⚙️ Cấu hình Hệ thống & API
+              </h3>
+              
+              <!-- Total Revenue Display -->
+              <div class="financial-stats">
+                <div class="stat-box">
+                  <div class="stat-label">Ví Quỹ Nhà Cái</div>
+                  <div class="stat-val gold" id="adminSystemWallet">0 Xu</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-label">Tổng phí hoa hồng sàn</div>
+                  <div class="stat-val green" id="adminTotalCommission">0 Xu</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-label">Phí sàn nhà cái</div>
+                  <div class="stat-val" id="adminFeeDisplay">5%</div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="inputPlatformFee">Phí hoa hồng sàn (%)</label>
+                <input type="number" class="form-input" id="inputPlatformFee" value="5" min="0" max="50">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="inputOddsApiKey">The Odds API Key</label>
+                <input type="password" class="form-input" id="inputOddsApiKey" placeholder="Nhập API Key để đồng bộ kèo chấp thật">
+                <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+                  Đăng ký key miễn phí tại <a href="https://the-odds-api.com/" target="_blank" style="color: var(--accent-green); text-decoration: none;">the-odds-api.com</a>.
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="selectOddsApiSport">Giải đấu đồng bộ</label>
+                <select class="form-input" id="selectOddsApiSport">
+                  <option value="soccer_uefa_champs_league">UEFA Champions League</option>
+                  <option value="soccer_epl">English Premier League</option>
+                  <option value="soccer_fifaworldcup">FIFA World Cup</option>
+                </select>
+              </div>
+
+              <button class="btn primary" style="width:100%;" id="btnSaveAdminSettings">Lưu Cấu Hình</button>
+            </div>
+
+            <!-- Cashier / Wallet Deposit (Nạp tiền thủ công) -->
+            <div class="admin-card">
+              <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                💸 Nạp Xu Cho Thành Viên (Chuyển khoản ngoài hệ thống)
+              </h3>
+              
+              <div class="form-group">
+                <label class="form-label" for="selectDepositUser">Chọn người chơi</label>
+                <select class="form-input" id="selectDepositUser">
+                  <!-- Dynamic players options -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="inputDepositAmount">Số lượng Xu cần nạp (+)</label>
+                <input type="number" class="form-input" id="inputDepositAmount" placeholder="Nhập số xu, ví dụ: 500" min="1">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="inputDepositDesc">Ghi chú giao dịch</label>
+                <input type="text" class="form-input" id="inputDepositDesc" value="Nạp tiền thủ công qua CK ngân hàng">
+              </div>
+
+              <button class="btn gold" style="width:100%;" id="btnSubmitDeposit">Xác Nhận Nạp Xu</button>
+            </div>
+
+          </div>
+
+          <!-- Right Column: Manual Match Manager -->
+          <div class="admin-card">
+            <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+              🏟️ Quản lý kèo chấp & Trận đấu thủ công
+            </h3>
+            <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-bottom: 12px;">
+              * Lưu ý: Tỷ lệ chấp chỉ hỗ trợ các giá trị lẻ bán trái (0.5, 1.5, 2.5) để loại bỏ kịch bản hòa kèo hoàn tiền.
+            </p>
+
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Trận đấu</th>
+                    <th>Cửa trên (Chấp)</th>
+                    <th>Chấp</th>
+                    <th>Odds Trên/Dưới</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody id="adminMatchesTableBody">
+                  <!-- Dynamic Match Rows for Admin -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Create Manual Match Form -->
+            <div style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 12px; color: var(--accent-green);">➕ Tạo trận đấu thủ công mới</h4>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label class="form-label">Đội Nhà (Home)</label>
+                  <input type="text" class="form-input" id="inputNewHomeTeam" placeholder="Ví dụ: Brazil">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Đội Khách (Away)</label>
+                  <input type="text" class="form-input" id="inputNewAwayTeam" placeholder="Ví dụ: Argentina">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px;">
+                <div class="form-group">
+                  <label class="form-label">Sân đấu</label>
+                  <input type="text" class="form-input" id="inputNewStadium" placeholder="Ví dụ: Maracana">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Thời gian</label>
+                  <input type="datetime-local" class="form-input" id="inputNewMatchTime">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label class="form-label">Chọn Đội Chấp</label>
+                  <select class="form-input" id="selectNewHandicapTeam">
+                    <option value="home">Đội Nhà (Home) Chấp</option>
+                    <option value="away">Đội Khách (Away) Chấp</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tỷ lệ Chấp (Lẻ)</label>
+                  <select class="form-input" id="selectNewHandicapVal">
+                    <option value="0.5">0.5 (Chấp nửa trái)</option>
+                    <option value="1.5">1.5 (Chấp trái rưỡi)</option>
+                    <option value="2.5">2.5 (Chấp hai trái rưỡi)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label class="form-label">Odds Cửa Trên</label>
+                  <input type="number" class="form-input" id="inputNewOddsUpper" value="0.95" step="0.01" min="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Odds Cửa Dưới</label>
+                  <input type="number" class="form-input" id="inputNewOddsLower" value="0.85" step="0.01" min="0.1">
+                </div>
+              </div>
+
+              <button class="btn primary" style="width:100%;" id="btnCreateManualMatch">Tạo Trận Đấu & Kèo Chấp</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 4. MODALS & DIALOGS -->
+  
+  <!-- Modal: Betting Drawer -->
+  <div class="modal-overlay" id="betModalOverlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Đặt cược kèo chấp Châu Á</h3>
+        <button class="modal-close-btn" id="btnCloseBetModal">&times;</button>
+      </div>
+      
+      <div style="margin-bottom: 20px; text-align: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: var(--border-radius-md);">
+        <div style="font-size: 0.8rem; color: var(--color-text-muted);" id="betModalMatchStadium">Stadium</div>
+        <div style="font-size: 1.1rem; font-weight:800; margin-top: 4px;" id="betModalMatchVersus">Đội A vs Đội B</div>
+        <div style="font-size: 0.75rem; color: var(--accent-red); font-weight:700; margin-top: 4px;" id="betModalMatchHandicap">Đội A chấp 0.5 trái</div>
+      </div>
+
+      <!-- Upper/Lower select buttons -->
+      <label class="form-label">Chọn Cửa Đặt Cược</label>
+      <div class="bet-side-selector">
+        <button class="bet-side-btn" id="btnBetSideUpper" data-side="upper">
+          <div class="bet-side-name" id="betModalUpperTeamName">Cửa Trên</div>
+          <div style="font-size:0.75rem; color:var(--color-text-muted); margin-bottom: 4px;">Đặt cửa chấp</div>
+          <div class="bet-side-odds" id="betModalUpperOdds">Odds: 0.95</div>
+        </button>
+        <button class="bet-side-btn" id="btnBetSideLower" data-side="lower">
+          <div class="bet-side-name" id="betModalLowerTeamName">Cửa Dưới</div>
+          <div style="font-size:0.75rem; color:var(--color-text-muted); margin-bottom: 4px;">Đặt cửa được chấp</div>
+          <div class="bet-side-odds" id="betModalLowerOdds">Odds: 0.85</div>
+        </button>
+      </div>
+
+      <!-- Amount Input -->
+      <div class="form-group">
+        <label class="form-label" for="inputBetAmount">Số lượng Xu đặt cược</label>
+        <input type="number" class="form-input" id="inputBetAmount" placeholder="Ví dụ: 100" min="10">
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-text-muted); margin-top: 6px;">
+          <span>Khả dụng: <strong id="betModalAvailBalance" style="color:var(--color-text-main);">0</strong> Xu</span>
+          <span style="cursor: pointer; color: var(--accent-green); font-weight:700;" id="btnBetAllIn">Tất tay (All-in)</span>
+        </div>
+      </div>
+
+      <!-- Financial Winnings summary calculation -->
+      <div class="bet-summary">
+        <div class="summary-row">
+          <span>Tiền cược (Đóng băng):</span>
+          <span id="summaryBetAmount">0 Xu</span>
+        </div>
+        <div class="summary-row">
+          <span>Tỷ lệ ăn cược (Odds):</span>
+          <span id="summaryOdds">0.00</span>
+        </div>
+        <div class="summary-row">
+          <span>Thuế sàn khi thắng (<span id="summaryFeePercent">5</span>%):</span>
+          <span style="color: var(--accent-red);" id="summaryFeeVal">0 Xu</span>
+        </div>
+        <div class="summary-row summary-total">
+          <span>Thực nhận dự kiến khi thắng:</span>
+          <span class="val" id="summaryWinnings">0 Xu</span>
+        </div>
+      </div>
+
+      <button class="bet-action-btn" id="btnSubmitBet" disabled>🔥 XÁC NHẬN ĐẶT CƯỢC</button>
+    </div>
+  </div>
+
+  <!-- Modal: Create Custom Room -->
+  <div class="modal-overlay" id="createRoomModalOverlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Tạo phòng Custom mới</h3>
+        <button class="modal-close-btn" id="btnCloseCreateRoomModal">&times;</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="inputRoomName">Tên phòng chơi</label>
+        <input type="text" class="form-input" id="inputRoomName" placeholder="Ví dụ: Phòng cược Ban Công Nghệ">
+      </div>
+      <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="checkApprovalRequired" style="width: 18px; height: 18px; cursor: pointer;">
+        <label for="checkApprovalRequired" class="form-label" style="margin-bottom: 0; cursor: pointer;">Yêu cầu Admin duyệt thành viên khi vào</label>
+      </div>
+      <button class="btn primary" style="width: 100%; padding: 12px; margin-top: 12px;" id="btnCreateRoomSubmit">Tạo Phòng & Nhận Code</button>
+    </div>
+  </div>
+
+  <!-- Modal: Join Custom Room -->
+  <div class="modal-overlay" id="joinRoomModalOverlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Tham gia phòng bằng mã Code</h3>
+        <button class="modal-close-btn" id="btnCloseJoinRoomModal">&times;</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="inputRoomCode">Mã Room Code (6 ký tự)</label>
+        <input type="text" class="form-input" id="inputRoomCode" placeholder="Ví dụ: GOAT69" maxlength="6" style="text-transform: uppercase; font-family: monospace; font-size: 1.2rem; letter-spacing: 0.1em; text-align: center;">
+      </div>
+      <button class="btn gold" style="width: 100%; padding: 12px; margin-top: 12px;" id="btnJoinRoomSubmit">Gửi yêu cầu tham gia</button>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Match Score / Odds (Admin only) -->
+  <div class="modal-overlay" id="editMatchModalOverlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Cập nhật trận đấu & Kèo chấp</h3>
+        <button class="modal-close-btn" id="btnCloseEditMatchModal">&times;</button>
+      </div>
+      
+      <input type="hidden" id="editMatchId">
+
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: var(--border-radius-md); margin-bottom: 16px; text-align: center;">
+        <strong id="editMatchTeams">Đội A vs Đội B</strong>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Trạng thái trận đấu</label>
+        <select class="form-input" id="editMatchStatus">
+          <option value="upcoming">Chưa diễn ra (Upcoming)</option>
+          <option value="live">Đang trực tiếp (Live)</option>
+          <option value="finished">Đã kết thúc (Finished)</option>
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" id="editScoresRow">
+        <div class="form-group">
+          <label class="form-label" id="editLabelHomeScore">Bàn thắng Đội Nhà</label>
+          <input type="number" class="form-input" id="editHomeScore" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="editLabelAwayScore">Bàn thắng Đội Khách</label>
+          <input type="number" class="form-input" id="editAwayScore" min="0">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">Chọn Đội Chấp</label>
+          <select class="form-input" id="editHandicapTeam">
+            <option value="home">Đội Nhà (Home)</option>
+            <option value="away">Đội Khách (Away)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tỷ lệ Chấp</label>
+          <select class="form-input" id="editHandicapVal">
+            <option value="0.5">0.5 (Chấp nửa trái)</option>
+            <option value="1.5">1.5 (Chấp trái rưỡi)</option>
+            <option value="2.5">2.5 (Chấp hai trái rưỡi)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">Odds Đội Chấp (Cửa Trên)</label>
+          <input type="number" class="form-input" id="editOddsUpper" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Odds Đội Được Chấp (Cửa Dưới)</label>
+          <input type="number" class="form-input" id="editOddsLower" step="0.01">
+        </div>
+      </div>
+
+      <button class="btn primary" style="width: 100%; padding: 12px; margin-top: 12px;" id="btnSubmitEditMatch">Cập Nhật Thông Tin</button>
+    </div>
+  </div>
+
+  <!-- Toast Toastmaster Floating Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
