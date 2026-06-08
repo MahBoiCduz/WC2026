@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🏆 World Cup Betting App - Hệ Thống Cá Cược Nội Bộ</title>
   <link rel="stylesheet" href="styles.css">
+  <!-- Google Identity Services client library -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -14,26 +16,22 @@
       <div style="text-align: center; margin-bottom: 24px;">
         <span style="font-size: 3rem;">🏆</span>
         <h2 style="font-size: 1.5rem; font-weight: 800; margin-top: 10px; background: linear-gradient(135deg, #fff 30%, var(--accent-green) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Cúp Vàng Nội Bộ</h2>
-        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 4px;">Hệ thống cá cược nội bộ - Vui lòng đăng nhập</p>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 4px;">Hệ thống cá cược nội bộ - Đăng nhập tài khoản Google</p>
       </div>
 
-      <div class="form-group">
-        <label class="form-label" for="loginUsername">Tài khoản</label>
-        <select class="form-input" id="loginUsername" style="cursor: pointer;">
-          <option value="messi">Lionel Messi (Player)</option>
-          <option value="ronaldo">Cristiano Ronaldo (Player)</option>
-          <option value="neymar">Neymar Jr (Player)</option>
-          <option value="admin">Admin Hệ Thống (Admin)</option>
-        </select>
+      <!-- Google Sign In Button Container -->
+      <div id="googleBtnContainer" style="display: flex; justify-content: center; margin-top: 20px; min-height: 40px;"></div>
+      
+      <!-- User-configurable Client ID input field (For easy configuration directly on UI if needed) -->
+      <div style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+        <label class="form-label" for="inputGoogleClientId" style="font-size: 0.7rem;">Google Client ID (Config)</label>
+        <input type="text" class="form-input" id="inputGoogleClientId" placeholder="Dán Client ID của bạn để kích hoạt Google Login" style="font-size: 0.75rem; padding: 8px;">
+        <p style="font-size: 0.65rem; color: var(--color-text-dark); margin-top: 4px;">
+          * Mặc định hệ thống dùng Client ID demo của bạn. Cần cấu hình đúng để nút hiện lên.
+        </p>
       </div>
 
-      <div class="form-group">
-        <label class="form-label" for="loginPassword">Mật khẩu</label>
-        <input type="password" class="form-input" id="loginPassword" value="123" placeholder="Nhập mật khẩu (Mặc định: 123)">
-      </div>
-
-      <button class="bet-action-btn" id="btnLoginSubmit" style="margin-top: 10px;">🔓 Đăng Nhập</button>
-      <div id="loginErrorMessage" style="color: var(--accent-red); font-size: 0.8rem; margin-top: 12px; text-align: center; display: none;">Mật khẩu không chính xác!</div>
+      <div id="loginErrorMessage" style="color: var(--accent-red); font-size: 0.8rem; margin-top: 12px; text-align: center; display: none;">Có lỗi xảy ra khi xác thực Google!</div>
     </div>
   </div>
 

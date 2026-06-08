@@ -8,26 +8,35 @@ const INITIAL_DATA = {
     apiKey: "", // API Key cho The Odds API
     oddsApiSport: "soccer_uefa_champs_league", // Giải đấu đồng bộ mặc định
     lastSyncTime: null,
-    systemWalletBalance: 0 // Số xu trong ví nhà cái thu từ phí sàn & cược thua
+    systemWalletBalance: 0, // Số xu trong ví nhà cái thu từ phí sàn & cược thua
+    googleClientId: "888258284687-scl20ld2kio40m22u3bqpikmksu6b3o3.apps.googleusercontent.com" // Mẫu Client ID (người dùng thay đổi được)
   },
   
   // Trạng thái phiên đăng nhập giả lập
   currentUser: null, // Đổi mặc định thành null để bắt đăng nhập khi vào app
 
-  // Danh sách tài khoản người dùng trong hệ thống có mật khẩu băm đơn giản/mã hóa
+  // Danh sách tài khoản người dùng trong hệ thống
   users: {
-    "admin": {
-      id: "admin",
-      username: "Admin Nhà Cái",
-      password: "123", // Mật khẩu đăng nhập demo
+    "dinhminhhieu28_gmail_com": {
+      id: "dinhminhhieu28_gmail_com",
+      username: "Hieu Dinh (Admin)",
+      email: "dinhminhhieu28@gmail.com",
       role: "admin",
       balance: 100000,
       avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=admin"
     },
+    "ngsduc2000_gmail_com": {
+      id: "ngsduc2000_gmail_com",
+      username: "Duc Nguyen (Admin)",
+      email: "ngsduc2000@gmail.com",
+      role: "admin",
+      balance: 100000,
+      avatar: "https://api.dicebear.com/7.x/duc/svg?seed=duc"
+    },
     "messi": {
       id: "messi",
       username: "Lionel Messi",
-      password: "123",
+      email: "messi@gmail.com",
       role: "player",
       balance: 1500,
       avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=messi"
@@ -35,7 +44,7 @@ const INITIAL_DATA = {
     "ronaldo": {
       id: "ronaldo",
       username: "Cristiano Ronaldo",
-      password: "123",
+      email: "ronaldo@gmail.com",
       role: "player",
       balance: 1200,
       avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=ronaldo"
@@ -43,7 +52,7 @@ const INITIAL_DATA = {
     "neymar": {
       id: "neymar",
       username: "Neymar Jr",
-      password: "123",
+      email: "neymar@gmail.com",
       role: "player",
       balance: 800,
       avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=neymar"

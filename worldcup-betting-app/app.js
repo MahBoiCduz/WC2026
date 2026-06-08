@@ -14,6 +14,7 @@ function initLocalStorageState() {
       // Đảm bảo các cấu hình mới nếu có
       if (!state.config) state.config = INITIAL_DATA.config;
       if (!state.config.systemWalletBalance) state.config.systemWalletBalance = 0;
+      if (!state.config.googleClientId) state.config.googleClientId = INITIAL_DATA.config.googleClientId;
       if (!state.simulatedClock) {
         state.simulatedClock = new Date().toISOString();
       }
@@ -1414,34 +1415,115 @@ function processEditMatchSubmit() {
   document.getElementById("editMatchModalOverlay").classList.remove("active");
 }
 
+// Hàm giải mã Payload JWT Token từ Google (Client-side base64 decode)
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Lỗi giải mã JWT Google:", error);
+    return null;
+  }
+}
+
+// Hàm khởi tạo và hiển thị Nút Đăng nhập Google
+function initGoogleSignIn() {
+  const clientId = state.config.googleClientId || "888258284687-scl20ld2kio40m22u3bqpikmksu6b3o3.apps.googleusercontent.com";
+  
+  // Đồng bộ giá trị Client ID lên input cấu hình trên màn hình khóa
+  const inputClientId = document.getElementById("inputGoogleClientId");
+  if (inputClientId) {
+    inputClientId.value = clientId;
+  }
+
+  if (typeof google === 'undefined') {
+    console.warn("Google Identity Services script chưa được tải. Đang tải lại...");
+    setTimeout(initGoogleSignIn, 1000);
+    return;
+  }
+
+  try {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleCredentialResponse
+    });
+
+    google.accounts.id.renderButton(
+      document.getElementById("googleBtnContainer"),
+      { theme: "dark", size: "large", width: "320" }
+    );
+  } catch (err) {
+    console.error("Lỗi khởi tạo nút Google Login:", err);
+  }
+}
+
+// Callback xử lý sau khi người dùng đăng nhập Google thành công
+function handleCredentialResponse(response) {
+  const payload = parseJwt(response.credential);
+  if (!payload) {
+    document.getElementById("loginErrorMessage").style.display = "block";
+    document.getElementById("loginErrorMessage").textContent = "Không thể giải mã dữ liệu Google!";
+    return;
+  }
+
+  const email = payload.email.toLowerCase();
+  const name = payload.name;
+  const picture = payload.picture;
+
+  // Định danh User ID (thay ký tự đặc biệt để làm key object)
+  const userId = email.replace(/[^a-zA-Z0-9]/g, "_");
+
+  // Kiểm tra tài khoản đã tồn tại trong DB chưa
+  if (!state.users[userId]) {
+    // 1. Kiểm tra Email Admin mặc định
+    const adminEmails = ["dinhminhhieu28@gmail.com", "ngsduc2000@gmail.com"];
+    const isSystemAdmin = adminEmails.includes(email);
+
+    // 2. Tạo User mới. Theo yêu cầu: KHÔNG tự động cấp 1000 xu, khởi tạo bằng 0 xu
+    state.users[userId] = {
+      id: userId,
+      username: name,
+      email: email,
+      role: isSystemAdmin ? "admin" : "player",
+      balance: isSystemAdmin ? 100000 : 0, // Admin có xu chạy cược, player khởi đầu bằng 0
+      avatar: picture || `https://api.dicebear.com/7.x/adventurer/svg?seed=${userId}`
+    };
+
+    // Tạo lịch sử giao dịch gốc
+    state.transactions.unshift({
+      id: "tx_init_" + Date.now(),
+      userId: userId,
+      amount: isSystemAdmin ? 100000 : 0,
+      type: "deposit",
+      description: "Tạo tài khoản qua Google Sign-In (Cần Admin nạp Xu để bắt đầu cược)",
+      timestamp: state.simulatedClock
+    });
+  }
+
+  // Cập nhật User hiện tại đang đăng nhập
+  state.currentUser = userId;
+  saveState();
+
+  // Ẩn màn hình đăng nhập
+  document.getElementById("loginOverlay").style.display = 'none';
+  document.getElementById("loginErrorMessage").style.display = 'none';
+
+  updateUI();
+  showToast(`🔑 Đăng nhập bằng Google thành công! Chào ${name}`, "success");
+  
+  // Chạy đồng bộ trận đấu
+  runMatchAutomationSync();
+}
+
 // ----------------------------------------------------
 // 13. KHỞI TẠO BỘ LẮNG NGHE SỰ KIỆN (EVENT LISTENERS)
 // ----------------------------------------------------
 function initAllEventListeners() {
-  // === A. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT ===
-  document.getElementById("btnLoginSubmit").addEventListener('click', () => {
-    const username = document.getElementById("loginUsername").value;
-    const passwordInput = document.getElementById("loginPassword").value;
-    const errorMsg = document.getElementById("loginErrorMessage");
-
-    const user = state.users[username];
-    if (user && user.password === passwordInput) {
-      state.currentUser = username;
-      saveState();
-      
-      // Ẩn Overlay Login
-      document.getElementById("loginOverlay").style.display = 'none';
-      errorMsg.style.display = 'none';
-      document.getElementById("loginPassword").value = ""; // clear input
-      
-      updateUI();
-      showToast(`🔑 Đăng nhập thành công! Chào mừng ${user.username}`, "success");
-    } else {
-      errorMsg.style.display = 'block';
-      errorMsg.textContent = "Mật khẩu không chính xác! (Mặc định: 123)";
-    }
-  });
-
+  // === A. XỬ LÝ ĐĂNG XUẤT ===
   document.getElementById("btnLogoutBtn").addEventListener('click', () => {
     state.currentUser = null;
     saveState();
@@ -1451,6 +1533,9 @@ function initAllEventListeners() {
     document.getElementById("loginErrorMessage").style.display = 'none';
     
     updateUI();
+    // Khởi tạo lại nút Google
+    initGoogleSignIn();
+    
     showToast("🚪 Đã đăng xuất khỏi tài khoản.", "info");
   });
 
@@ -1674,6 +1759,20 @@ function initAllEventListeners() {
     document.getElementById("inputNewStadium").value = "";
     document.getElementById("inputNewMatchTime").value = "";
   });
+
+  // Xử lý Thay đổi Client ID Google thủ công từ UI
+  const inputClientId = document.getElementById("inputGoogleClientId");
+  if (inputClientId) {
+    inputClientId.addEventListener('change', (e) => {
+      const val = e.target.value.trim();
+      if (val) {
+        state.config.googleClientId = val;
+        saveState();
+        showToast("💾 Đã lưu cấu hình Google Client ID mới!", "success");
+        initGoogleSignIn(); // render lại nút login
+      }
+    });
+  }
 }
 
 // ----------------------------------------------------
@@ -1697,6 +1796,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // === BẮT ĐẦU CHECK AUTHENTICATION ===
   if (!state.currentUser) {
     document.getElementById("loginOverlay").style.display = 'flex';
+    initGoogleSignIn();
   } else {
     document.getElementById("loginOverlay").style.display = 'none';
   }
