@@ -8,8 +8,37 @@
 </head>
 <body>
 
+  <!-- Login Screen Overlay (Chặn toàn bộ tương tác nếu chưa login) -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <span style="font-size: 3rem;">🏆</span>
+        <h2 style="font-size: 1.5rem; font-weight: 800; margin-top: 10px; background: linear-gradient(135deg, #fff 30%, var(--accent-green) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Cúp Vàng Nội Bộ</h2>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 4px;">Hệ thống cá cược nội bộ - Vui lòng đăng nhập</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="loginUsername">Tài khoản</label>
+        <select class="form-input" id="loginUsername" style="cursor: pointer;">
+          <option value="messi">Lionel Messi (Player)</option>
+          <option value="ronaldo">Cristiano Ronaldo (Player)</option>
+          <option value="neymar">Neymar Jr (Player)</option>
+          <option value="admin">Admin Hệ Thống (Admin)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="loginPassword">Mật khẩu</label>
+        <input type="password" class="form-input" id="loginPassword" value="123" placeholder="Nhập mật khẩu (Mặc định: 123)">
+      </div>
+
+      <button class="bet-action-btn" id="btnLoginSubmit" style="margin-top: 10px;">🔓 Đăng Nhập</button>
+      <div id="loginErrorMessage" style="color: var(--accent-red); font-size: 0.8rem; margin-top: 12px; text-align: center; display: none;">Mật khẩu không chính xác!</div>
+    </div>
+  </div>
+
   <!-- 1. Top Simulator Bar (Dành cho việc kiểm thử và chạy tự động) -->
-  <div class="simulator-banner">
+  <div class="simulator-banner" id="simulatorBanner">
     <div class="sim-title">
       <span>⚙️ BẢNG GIẢ LẬP VẬN HÀNH (SIMULATOR)</span>
     </div>
@@ -25,7 +54,7 @@
     </div>
   </div>
 
-  <div class="app-container">
+  <div class="app-container" id="appMainContainer">
     
     <!-- 2. Sidebar Navigation -->
     <aside class="sidebar">
@@ -83,16 +112,13 @@
         </ul>
       </nav>
 
-      <!-- Role Switcher -->
-      <div class="role-switcher-container">
-        <label class="switcher-label">Chuyển tài khoản Test</label>
-        <select class="role-select" id="roleSelect">
-          <option value="messi">Lionel Messi (Player)</option>
-          <option value="ronaldo">Cristiano Ronaldo (Player)</option>
-          <option value="neymar">Neymar Jr (Player)</option>
-          <option value="admin">Admin Hệ Thống</option>
-        </select>
+      <!-- Logout Button -->
+      <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color);">
+        <button class="sim-btn danger" id="btnLogoutBtn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px;">
+          <span>🚪</span> Đăng xuất
+        </button>
       </div>
+
     </aside>
 
     <!-- 3. Main Content Panel -->

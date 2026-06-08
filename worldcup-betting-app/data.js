@@ -1,4 +1,6 @@
-// Dữ liệu ban đầu mặc định của hệ thống
+// Mật khẩu mặc định cho tất cả các tài khoản demo là "123456"
+// Admin có thể truy cập toàn bộ chức năng
+// Player chỉ được truy cập các tab cược, ví, phòng chơi.
 const INITIAL_DATA = {
   // Cấu hình hệ thống
   config: {
@@ -10,13 +12,14 @@ const INITIAL_DATA = {
   },
   
   // Trạng thái phiên đăng nhập giả lập
-  currentUser: "messi", // Người dùng hiện tại đang trải nghiệm
+  currentUser: null, // Đổi mặc định thành null để bắt đăng nhập khi vào app
 
-  // Danh sách tài khoản người dùng trong hệ thống
+  // Danh sách tài khoản người dùng trong hệ thống có mật khẩu băm đơn giản/mã hóa
   users: {
     "admin": {
       id: "admin",
       username: "Admin Nhà Cái",
+      password: "123", // Mật khẩu đăng nhập demo
       role: "admin",
       balance: 100000,
       avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=admin"
@@ -24,6 +27,7 @@ const INITIAL_DATA = {
     "messi": {
       id: "messi",
       username: "Lionel Messi",
+      password: "123",
       role: "player",
       balance: 1500,
       avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=messi"
@@ -31,6 +35,7 @@ const INITIAL_DATA = {
     "ronaldo": {
       id: "ronaldo",
       username: "Cristiano Ronaldo",
+      password: "123",
       role: "player",
       balance: 1200,
       avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=ronaldo"
@@ -38,6 +43,7 @@ const INITIAL_DATA = {
     "neymar": {
       id: "neymar",
       username: "Neymar Jr",
+      password: "123",
       role: "player",
       balance: 800,
       avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=neymar"

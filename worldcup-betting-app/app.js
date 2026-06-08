@@ -581,10 +581,13 @@ function updateUI() {
 
   // B. Ẩn/Hiện Tab Admin dựa trên quyền
   const navAdminLink = document.getElementById("navAdminLink");
+  const simBanner = document.getElementById("simulatorBanner");
   if (currentUser.role === 'admin') {
     navAdminLink.style.display = 'flex';
+    if (simBanner) simBanner.style.display = 'flex';
   } else {
     navAdminLink.style.display = 'none';
+    if (simBanner) simBanner.style.display = 'none';
     // Nếu user thông thường đang ở tab admin, đẩy họ về tab match center
     const adminSec = document.getElementById("admin-console");
     if (adminSec && adminSec.classList.contains('active')) {
@@ -1415,12 +1418,40 @@ function processEditMatchSubmit() {
 // 13. KHỞI TẠO BỘ LẮNG NGHE SỰ KIỆN (EVENT LISTENERS)
 // ----------------------------------------------------
 function initAllEventListeners() {
-  // A. Đổi tài khoản Test (Role Selector)
-  document.getElementById("roleSelect").addEventListener('change', (e) => {
-    state.currentUser = e.target.value;
+  // === A. XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT ===
+  document.getElementById("btnLoginSubmit").addEventListener('click', () => {
+    const username = document.getElementById("loginUsername").value;
+    const passwordInput = document.getElementById("loginPassword").value;
+    const errorMsg = document.getElementById("loginErrorMessage");
+
+    const user = state.users[username];
+    if (user && user.password === passwordInput) {
+      state.currentUser = username;
+      saveState();
+      
+      // Ẩn Overlay Login
+      document.getElementById("loginOverlay").style.display = 'none';
+      errorMsg.style.display = 'none';
+      document.getElementById("loginPassword").value = ""; // clear input
+      
+      updateUI();
+      showToast(`🔑 Đăng nhập thành công! Chào mừng ${user.username}`, "success");
+    } else {
+      errorMsg.style.display = 'block';
+      errorMsg.textContent = "Mật khẩu không chính xác! (Mặc định: 123)";
+    }
+  });
+
+  document.getElementById("btnLogoutBtn").addEventListener('click', () => {
+    state.currentUser = null;
     saveState();
+    
+    // Hiển thị lại Overlay Login
+    document.getElementById("loginOverlay").style.display = 'flex';
+    document.getElementById("loginErrorMessage").style.display = 'none';
+    
     updateUI();
-    showToast(`🔑 Đã chuyển sang tài khoản trải nghiệm: ${state.users[state.currentUser].username}`, "info");
+    showToast("🚪 Đã đăng xuất khỏi tài khoản.", "info");
   });
 
   // B. Giả lập / Simulator Actions
@@ -1649,13 +1680,12 @@ function initAllEventListeners() {
 // 14. RUN LOOPS (TỰ ĐỘNG CHẠY TIẾN TRÌNH NGẦM 5 PHÚT)
 // ----------------------------------------------------
 function startAutomatedCron() {
-  // Tự động chạy tickSimulatedClock mỗi 5 giây (tương đương 5 phút trong game để dễ test)
-  // Nhưng để không gây xáo trộn hoặc làm trận đấu kết thúc quá nhanh nếu người dùng đang đọc,
-  // chúng ta thiết lập 30 giây thực tế = 5 phút simulated time.
-  // Người dùng cũng có thể tua nhanh thủ công bằng nút "Tua nhanh 5 phút".
+  // Tự động chạy tickSimulatedClock mỗi 30 giây thực tế = 5 phút game
   setInterval(() => {
-    tickSimulatedClock(5);
-  }, 30000); // 30s = 5 phút game
+    if (state.currentUser) {
+      tickSimulatedClock(5);
+    }
+  }, 30000);
 }
 
 // Khởi chạy ứng dụng khi DOM sẵn sàng
@@ -1664,12 +1694,20 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTabNavigation();
   initAllEventListeners();
   
-  // Đặt mặc định select role theo state
-  document.getElementById("roleSelect").value = state.currentUser;
-  
+  // === BẮT ĐẦU CHECK AUTHENTICATION ===
+  if (!state.currentUser) {
+    document.getElementById("loginOverlay").style.display = 'flex';
+  } else {
+    document.getElementById("loginOverlay").style.display = 'none';
+  }
+
   updateUI();
   startAutomatedCron();
 
   // Chạy đồng bộ tự động trận đấu lần đầu
-  runMatchAutomationSync();
+  if (state.currentUser) {
+    runMatchAutomationSync();
+  }
 });
+
+
